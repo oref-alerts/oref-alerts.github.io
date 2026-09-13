@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>שאגת הארי - מעקב התראות</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZQ8SBT55J5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ZQ8SBT55J5');
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/he.js"></script>
+<style>
+  :root {
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-pill: 20px;
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3345;
+    --text: #e4e6ed;
+    --text-dim: #8b8fa3;
+    --red: #e53e3e;
+    --red-glow: rgba(229,62,62,0.25);
+    --orange: #e8903e;
+    --orange-glow: rgba(232,144,62,0.25);
+    --purple: #9b59b6;
+    --purple-glow: rgba(155,89,182,0.25);
+    --header-bg: #161923;
+    --night-bg: rgba(80,120,200,.08);
+    --max-bg: rgba(229,62,62,.15);
+    --min-bg: rgba(34,197,94,.12);
+  }
+  html.light {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface2: #eef0f4;
+    --border: #d4d8e0;
+    --text: #1a1d27;
+    --text-dim: #6b7085;
+    --red: #dc2626;
+    --red-glow: rgba(220,38,38,0.2);
+    --orange: #d97706;
+    --orange-glow: rgba(217,119,6,0.2);
+    --purple: #7c3aed;
+    --purple-glow: rgba(124,58,237,0.2);
+    --header-bg: #ebedf2;
+    --night-bg: rgba(80,120,200,.06);
+    --max-bg: rgba(220,38,38,.12);
+    --min-bg: rgba(34,197,94,.10);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  button:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--red); }
+  .skip-link { position:absolute; top:-40px; right:0; background:var(--red); color:#fff; padding:8px 16px; z-index:9999; transition:top .2s; border-radius:0 0 0 var(--radius-md); }
+  .skip-link:focus { top:0; }
+  #loading-screen { position:fixed; inset:0; z-index:9000; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+  #loading-screen.hidden { display:none; }
+  .loading-spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--red); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-text { color:var(--text-dim); font-size:.85rem; }
+  body { font-family:-apple-system,system-ui,'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; min-height:100dvh; direction:rtl; }
+
+  .top-bar { background:var(--header-bg); border-bottom:1px solid var(--border); padding:10px 28px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .top-bar h1 { font-size:1.25rem; font-weight:600; display:flex; align-items:center; gap:10px; }
+  .top-bar .updated { font-size:max(.68rem, 11px); color:var(--text-dim); white-space:nowrap; margin-top:6px; }
+  .btn-theme { background:none; border:1px solid var(--border); border-radius:50%; width:36px; height:36px; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; color:var(--text-dim); }
+  .btn-theme:hover { border-color:var(--text-dim); }
+  .btn-theme svg { pointer-events:none; }
+  .btn-refresh { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:2px; vertical-align:middle; transition:color .15s; }
+  .btn-refresh:hover { color:var(--text); }
+  .siren { display:inline-block; width:10px; height:10px; background:var(--red); border-radius:50%; box-shadow:0 0 8px var(--red-glow); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--red-glow)} 50%{opacity:.5;box-shadow:0 0 16px var(--red-glow)} }
+
+  .toolbar { display:flex; padding:6px 28px; background:var(--surface); border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+  .toolbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .toolbar-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex-basis:100%; overflow:hidden; }
+
+  /* Area selector button — #4 colored pill */
+  .btn-areas { background:#3b82f6; border:none; color:#fff; padding:7px 16px; border-radius:var(--radius-pill); cursor:pointer; font-size:.75rem; font-weight:600; transition:all .15s; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+  .btn-areas:hover { opacity:.85; }
+  .btn-areas svg { width:14px; height:14px; fill:#fff; }
+
+  .area-selector { position:relative; }
+  .area-dropdown { display:none; position:absolute; top:100%; right:0; margin-top:6px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); min-width:320px; max-height:60vh; z-index:1000; box-shadow:0 12px 48px rgba(0,0,0,.5); flex-direction:column; }
+  .area-dropdown.open { display:flex; }
+  .area-dropdown-header { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-size:.8rem; }
+  .area-dropdown-header button { background:none; border:none; color:var(--red); cursor:pointer; font-size:.78rem; }
+  .area-search { width:100%; padding:8px 14px; background:var(--bg); border:none; border-bottom:1px solid var(--border); color:var(--text); font-size:.82rem; outline:none; }
+  .area-list { overflow-y:auto; padding:6px 0; flex:1; }
+  .area-item { display:flex; align-items:center; gap:8px; padding:5px 14px; cursor:pointer; font-size:.8rem; transition:background .1s; }
+  .area-item:hover { background:var(--surface2); }
+  .area-item input { accent-color:var(--red); }
+  .area-item .count { color:var(--text-dim); font-size:max(.7rem, 10px); margin-right:auto; }
+.area-error { display:none; padding:8px 14px; font-size:.75rem; color:var(--red); text-align:center; border-bottom:1px solid var(--border); }
+  .area-error.visible { display:block; }
+  .area-dropdown-footer { padding:8px 14px; border-top:1px solid var(--border); }
+  .btn-done { width:100%; padding:8px; background:var(--red); color:#fff; border:none; border-radius:var(--radius-sm); font-size:.82rem; font-weight:600; cursor:pointer; transition:opacity .15s; }
+  .btn-done:hover { opacity:.85; }
+
+  .area-toggle { display:flex; gap:2px; overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
+  .area-toggle button { background:none; border:none; border-bottom:2px solid transparent; color:var(--text-dim); padding:6px 12px; font-size:.75rem; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .area-toggle button.active { color:var(--text); font-weight:600; border-bottom-color:var(--red); }
+  .area-toggle button:hover:not(.active) { color:var(--text); border-bottom-color:var(--border); }
+
+  .range-ctrl { display:flex; align-items:center; gap:4px; }
+  .offset-btns { display:flex; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+  .offset-btns button { background:none; border:none; border-left:1px solid var(--border); color:var(--text-dim); padding:5px 10px; font-size:.75rem; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .offset-btns button:first-child { border-left:none; }
+  .offset-btns button.active { background:var(--surface2); color:var(--text); font-weight:600; }
+  .offset-btns button:hover:not(.active) { color:var(--text); }
+  .anchor-wrap { display:flex; align-items:center; gap:4px; }
+  .anchor-wrap input { background:var(--bg); border:1px solid var(--border); color:var(--text); padding:4px 6px; border-radius:var(--radius-sm); font-size:.72rem; width:82px; text-align:center; cursor:pointer; }
+  .cal-icon { color:var(--text-dim); cursor:pointer; transition:color .15s; }
+  .cal-icon:hover { color:var(--text); }
+  /* Flatpickr overrides */
+  .flatpickr-calendar { font-size:.85rem; }
+  .flatpickr-calendar.dark { background:var(--surface); border-color:var(--border); box-shadow:0 8px 32px rgba(0,0,0,.5); }
+  .flatpickr-calendar.dark .flatpickr-day.selected { background:var(--red); border-color:var(--red); }
+  .flatpickr-calendar.dark .flatpickr-day:hover { background:var(--surface2); }
+  .flatpickr-calendar.dark .flatpickr-day.today { border-color:var(--text-dim); }
+  .flatpickr-day.no-data { opacity:.35; }
+  .flatpickr-day.no-data::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--text-dim); }
+  .toolbar-sep { width:1px; height:20px; background:var(--border); }
+
+  .nav-btns { display:flex; gap:2px; flex-shrink:0; }
+  .nav-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:4px 8px; border-radius:var(--radius-sm); cursor:pointer; font-size:.85rem; transition:all .15s; }
+  .nav-btn:hover:not(:disabled) { background:var(--border); }
+  .nav-btn:disabled { opacity:.3; cursor:not-allowed; }
+
+  .stats-bar { display:flex; padding:6px 28px; background:var(--surface); border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px; }
+  .stats-bar-right { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .stats-bar-left { display:flex; align-items:center; gap:6px; flex-wrap:wrap; overflow:hidden; }
+  .stat { display:flex; align-items:baseline; gap:5px; }
+  .stat .num { font-size:.9rem; font-weight:700; color:var(--red); }
+  .stat .lbl { font-size:.65rem; color:var(--text-dim); }
+  .stat.toggleable { cursor:pointer; padding:3px 8px; border-radius:var(--radius-sm); transition:all .15s; border:1px solid transparent; }
+  .stat.toggleable:hover { border-color:var(--border); }
+  .stat.toggleable.off { opacity:.35; text-decoration:line-through; }
+
+  .calendar-wrapper { overflow:auto; padding:8px 16px 16px; position:relative; overscroll-behavior:contain; }
+  #grid-area { position: relative; }
+  .mobile-bottom-bar { display:none; }
+  .mob-areas-btn { display:none; }
+  .mob-updated { display:none; }
+
+  .time-grid { display:grid; border:1px solid var(--border); border-radius:var(--radius-md); overflow:clip; background:var(--surface); }
+  .tg-header { background:var(--header-bg); padding:8px 2px; text-align:center; font-size:.72rem; font-weight:600; border-bottom:1px solid var(--border); border-left:1px solid var(--border); color:var(--text-dim); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; position:sticky; top:0; z-index:4; }
+  /* Max indicator — red dot */
+  .tg-header.day-max { background:var(--max-bg); }
+  .tg-header.day-max .dd::after { content:'●'; font-size:.6rem; color:var(--red); margin-right:3px; }
+  .tg-time.hour-max { background:var(--max-bg); }
+  .tg-time.hour-max::after { content:'●'; font-size:.5rem; color:var(--red); position:absolute; left:2px; top:2px; }
+  /* Min indicator — green dot */
+  .tg-header.day-min { background:var(--min-bg); }
+  .tg-header.day-min .dd::after { content:'●'; font-size:.6rem; color:#22c55e; margin-right:3px; }
+  .tg-time.hour-min { background:var(--min-bg); }
+  .tg-time.hour-min::after { content:'●'; font-size:.5rem; color:#22c55e; position:absolute; left:2px; top:2px; }
+  .tg-header .dn { display:block; }
+  .tg-header .dd { font-weight:400; font-size:max(.65rem, 10px); }
+  .tg-header .day-stats { display:flex; justify-content:center; gap:6px; margin-top:3px; font-weight:400; font-size:max(.6rem, 10px); }
+  .ds-r { color:var(--red); }
+  .ds-w { color:var(--orange); }
+  .ds-d { color:var(--purple); }
+  .tg-time { padding:2px 3px 0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; font-size:.72rem; font-weight:600; color:var(--text-dim); background:var(--header-bg); border-bottom:1px solid var(--border); border-left:1px solid var(--border); gap:0; }
+  .tg-time.hour-max { background:var(--max-bg); }
+  .tg-time.hour-min { background:var(--min-bg); }
+  .tg-time { position:sticky; right:0; z-index:3; }
+  .tg-time .hour-stats { display:flex; gap:6px; font-size:max(.6rem, 10px); font-weight:400; }
+  .tg-corner { position:sticky; right:0; top:0; z-index:5; }
+  .tg-cell { position:relative; border-left:1px solid var(--border); box-shadow:inset 0 -1px 0 var(--border); overflow:hidden; }
+  .tg-cell.night { background:var(--night-bg); }
+  .tg-cell.no-coverage { background:rgba(200,180,140,.1); }
+  .tg-cell.night.no-coverage { background:rgba(180,160,120,.12); }
+  .tg-header.no-coverage { opacity:.35; }
+  .tg-time.night { color:#7a94c4; }
+
+  .evt { position:absolute; right:1px; left:1px; border-radius:3px; padding:0 2px; font-size:max(.55rem, 10px); color:#fff; cursor:default; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; z-index:2; min-height:4px; transition:transform .1s,box-shadow .1s; line-height:1.2; }
+  .evt::before { content:''; position:absolute; top:-8px; bottom:-8px; left:0; right:0; }
+  .evt.rocket { background:var(--red); }
+  .evt.warning { background:var(--orange); }
+  .evt.drone { background:var(--purple); }
+  @media(hover:hover) {
+    .evt:hover { transform:scaleX(1.08); z-index:20; }
+    .evt.rocket:hover { box-shadow:0 3px 14px var(--red-glow); }
+    .evt.warning:hover { box-shadow:0 3px 14px var(--orange-glow); }
+    .evt.drone:hover { box-shadow:0 3px 14px var(--purple-glow); }
+  }
+
+  .tooltip { display:none; position:fixed; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 14px; font-size:.8rem; z-index:1000; min-width:180px; max-width:300px; box-shadow:0 8px 32px rgba(0,0,0,.5); user-select:text; cursor:text; }
+  .tooltip.visible { display:block; }
+  .tooltip .tt-type { font-size:.72rem; color:var(--text-dim); margin-bottom:2px; }
+  .tooltip .tt-time { font-weight:700; font-size:.95rem; margin-bottom:4px; }
+  .tooltip .tt-dur { font-size:.75rem; color:var(--text-dim); margin-bottom:6px; }
+  .tooltip .tt-events { border-top:1px solid var(--border); padding-top:5px; font-size:.7rem; color:var(--text); line-height:1.6; }
+  .tooltip .tt-events .evt-label { color:var(--text-dim); font-size:max(.62rem, 10px); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+
+  .no-data { grid-column:1/-1; text-align:center; padding:50px 20px; color:var(--text-dim); }
+
+  /* #1 — Responsive mobile */
+  @media(max-width:900px) {
+    .toolbar { padding:8px 14px; gap:8px; }
+    .stats-bar { padding:6px 14px; gap:10px; }
+    .legend { padding:4px 14px; }
+  }
+  @media(max-width:600px), (max-height:500px) and (orientation:landscape) {
+    /* === Step 3: Compact mobile header === */
+    .top-bar { padding:6px 12px; flex-wrap:nowrap; position:relative; }
+    .top-bar h1 { font-size:.85rem; min-width:0; }
+    .top-bar > div { min-width:0; overflow:hidden; }
+    .top-bar .updated { font-size:.55rem; margin-top:1px; }
+    .btn-theme { margin-right:auto; }
+    /* === Step 4: Toolbar — city tabs + area icon === */
+    .toolbar { padding:0; gap:0; flex-wrap:nowrap; }
+    .toolbar-right { display:none; }
+    .toolbar-left { flex-basis:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; display:flex; align-items:center; flex-wrap:nowrap; }
+    .area-toggle { gap:0; }
+    .area-toggle button { min-height:44px; padding:8px 16px; font-size:.8rem; border-bottom-width:3px; white-space:nowrap; flex-shrink:0; }
+    .mob-areas-btn {
+      display:flex; align-items:center; gap:4px;
+      background:#3b82f6; border:none; border-radius:var(--radius-pill);
+      color:#fff; cursor:pointer; padding:6px 12px; min-height:36px; flex-shrink:0;
+      font-size:.7rem; font-weight:600; margin:4px;
+    }
+    .mob-areas-btn:hover { opacity:.85; }
+    .mob-areas-btn svg { fill:#fff; }
+    /* Area dropdown on mobile — fixed positioning, visible over hidden parent */
+    .area-dropdown.open {
+      position:fixed; top:80px; right:10px; left:10px;
+      margin-top:0; max-height:calc(100vh - 140px); max-height:calc(100dvh - 140px); min-width:auto;
+      padding-bottom:env(safe-area-inset-bottom, 0);
+    }
+
+    /* === Step 5: Compact stats row === */
+    .stats-bar { padding:0 10px 2px; gap:4px; flex-wrap:nowrap; min-height:auto; align-items:flex-end; }
+    .stats-bar-right { gap:10px; flex-wrap:nowrap; flex:1; align-items:flex-end; }
+    .stats-bar-left { display:none; }
+    .stat .lbl { font-size:.6rem; }
+    .stat .num { font-size:.8rem; }
+    .stat.toggleable { min-height:auto; padding:0 6px 2px; }
+    .mob-updated { display:none; }
+
+    .custom-range { flex-wrap:wrap; }
+
+    /* === Step 7+8: Mobile grid optimization + sticky === */
+    .calendar-wrapper {
+      padding:4px 0 calc(56px + env(safe-area-inset-bottom, 0)) 0;
+      overflow:auto;
+      overscroll-behavior:contain;
+      max-height:calc(100vh - 152px); max-height:calc(100dvh - 152px);
+      border-radius:var(--radius-md);
+    }
+    .tg-time { width:36px; font-size:.65rem; padding:1px 2px; }
+    .tg-header { padding:3px 1px; font-size:.6rem; }
+    .tg-header .dd { font-size:.55rem; }
+    .tg-header .day-stats { font-size:.5rem; gap:3px; margin-top:1px; }
+    .tg-time .hour-stats { font-size:.45rem; gap:2px; }
+    .tg-time { width:46px; font-size:.55rem; padding:1px 2px; }
+
+    /* === Mobile bottom bar === */
+    .mobile-bottom-bar {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      position:fixed;
+      bottom:0; left:0; right:0;
+      height:calc(48px + env(safe-area-inset-bottom, 0));
+      background:var(--surface);
+      border-top:1px solid var(--border);
+      padding:0 8px env(safe-area-inset-bottom, 0);
+      z-index:100;
+    }
+    .mob-nav-btn {
+      background:var(--surface2);
+      border:1px solid var(--border);
+      color:var(--text);
+      width:44px; height:44px;
+      border-radius:var(--radius-sm);
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+    }
+    .mob-nav-btn:disabled { opacity:.3; cursor:not-allowed; }
+    .mob-offset-btns {
+      display:flex;
+      background:var(--bg);
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      overflow:hidden;
+    }
+    .mob-offset-btns button {
+      background:none;
+      border:none;
+      border-left:1px solid var(--border);
+      color:var(--text-dim);
+      min-width:40px; height:40px;
+      font-size:.8rem;
+      cursor:pointer;
+    }
+    .mob-offset-btns button:first-child { border-left:none; }
+    .mob-offset-btns button.active { background:var(--surface2); color:var(--text); font-weight:600; }
+    .mob-date-btn {
+      background:var(--bg);
+      border:1px solid var(--border);
+      color:var(--text);
+      padding:0 10px;
+      height:40px;
+      border-radius:var(--radius-sm);
+      font-size:.75rem;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .calendar-wrapper { padding-bottom:56px; }
+
+    /* Touch targets and polish */
+    .evt { min-height:6px; right:0; left:0; padding:0; border-radius:2px; }
+    body { overflow-x:hidden; }
+  }
+  @media(max-width:380px) {
+    .mob-offset-btns button { min-width:36px; font-size:.75rem; }
+    .mob-date-btn { font-size:.68rem; padding:0 8px; }
+    .area-toggle button { padding:6px 10px; font-size:.72rem; }
+  }
+  /* Landscape mobile overrides — maximize vertical space */
+  @media(max-height:500px) and (orientation:landscape) {
+    .top-bar { padding:2px 16px; }
+    .top-bar .updated { display:none; }
+    .mobile-bottom-bar { height:40px; }
+    .mob-nav-btn { width:36px; height:36px; }
+    .mob-offset-btns button { height:34px; min-width:36px; }
+    .mob-date-btn { height:34px; }
+    .calendar-wrapper { max-height:calc(100vh - 110px); max-height:calc(100dvh - 110px); padding-bottom:48px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .siren { animation: none; }
+    * { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<a href="#cal-wrapper" class="skip-link">דלג לתוכן</a>
+<div id="loading-screen" aria-busy="true">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">טוען נתונים...</div>
+</div>
+
+<header class="top-bar">
+  <div>
+    <h1><span class="siren" aria-hidden="true"></span> שאגת הארי - מעקב התראות</h1>
+    <div class="updated"><button class="btn-refresh" id="btn-refresh" title="רענן עמוד" aria-label="רענן עמוד" onclick="location.reload()"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button> <span id="last-updated"></span></div>
+  </div>
+  <button class="btn-theme" id="btn-theme" title="מצב בהיר/כהה" aria-label="החלף ערכת נושא">
+    <svg class="icon-dark" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+    <svg class="icon-light" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="display:none"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+  </button>
+</header>
+
+<nav class="toolbar" aria-label="בקרת תצוגה">
+  <div class="toolbar-right">
+    <div class="area-selector">
+      <button class="btn-areas" id="btn-areas" title="בחירת אזורים להצגה" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        בחר
+      </button>
+      <div class="area-dropdown" id="area-dropdown">
+        <div class="area-dropdown-header">
+          <span>בחירת אזורים <small style="color:var(--text-dim);font-size:.65rem">(עד 10)</small></span>
+          <button id="btn-clear-all" title="נקה את כל הסימונים">נקה הכל</button>
+        </div>
+        <input type="text" class="area-search" id="area-search" placeholder="חיפוש אזור..." aria-label="חיפוש אזור">
+        <div class="area-error" id="area-error">יש לבחור לפחות אזור אחד</div>
+        <div class="area-list" id="area-list"></div>
+        <div class="area-dropdown-footer"><button class="btn-done" id="btn-done-areas">הצג</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="toolbar-left">
+    <button class="mob-areas-btn" id="mob-areas-btn" title="בחר אזורים" aria-label="בחר אזורים"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span>בחר</span></button>
+    <div class="area-toggle" id="area-toggle"></div>
+  </div>
+</nav>
+
+<div id="grid-area">
+  <section class="stats-bar" role="region" aria-label="סטטיסטיקה">
+    <div class="stats-bar-right">
+      <div class="stat toggleable" data-kind="rocket" id="stat-rockets-wrap" role="switch" tabindex="0" aria-label="הצג/הסתר ירי רקטות" title="לחצו להסתרה/הצגה"><span class="num" id="stat-rockets">0</span><span class="lbl">ירי רקטות</span></div>
+      <div class="stat toggleable" data-kind="warning" id="stat-warnings-wrap" role="switch" tabindex="0" aria-label="הצג/הסתר צפי התרעות" title="לחצו להסתרה/הצגה"><span class="num" id="stat-warnings" style="color:var(--orange)">0</span><span class="lbl">צפי התרעות</span></div>
+      <div class="stat toggleable" data-kind="drone" id="stat-drones-wrap" role="switch" tabindex="0" aria-label="הצג/הסתר כלי טיס" title="לחצו להסתרה/הצגה"><span class="num" id="stat-drones" style="color:var(--purple)">0</span><span class="lbl">כלי טיס</span></div>
+      <span class="mob-updated" id="mob-updated"></span>
+    </div>
+    <div class="stats-bar-left">
+      <div class="range-ctrl">
+        <div class="anchor-wrap">
+          <svg class="cal-icon" id="cal-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" role="button" tabindex="0" aria-label="פתח לוח שנה" title="פתח לוח שנה"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+          <input type="text" id="anchor-date" readonly aria-label="תאריך עוגן" title="תאריך עוגן - לחצו לבחירה">
+        </div>
+        <div class="offset-btns" id="offset-btns">
+          <button data-days="30" title="הצג 30 ימים">30</button>
+          <button data-days="14" title="הצג 14 ימים">14</button>
+          <button data-days="7" title="הצג 7 ימים">7</button>
+          <button data-days="3" title="הצג 3 ימים">3</button>
+          <button data-days="1" title="הצג יום אחד">1</button>
+        </div>
+      </div>
+      <div class="nav-btns">
+        <button id="btn-next" class="nav-btn" title="תקופה קודמת" aria-label="תקופה קודמת"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></button>
+        <button id="btn-prev" class="nav-btn" title="תקופה הבאה" aria-label="תקופה הבאה"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg></button>
+      </div>
+    </div>
+  </section>
+  <main class="calendar-wrapper" id="cal-wrapper"></main>
+  <div class="tooltip" id="tooltip">
+    <div class="tt-type"></div>
+    <div class="tt-time"></div>
+    <div class="tt-dur"></div>
+    <div class="tt-events"></div>
+  </div>
+  <div class="mobile-bottom-bar" id="mobile-bottom-bar">
+    <button class="mob-nav-btn" id="mob-btn-next" title="תקופה קודמת" aria-label="תקופה קודמת"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></button>
+    <div class="mob-offset-btns" id="mob-offset-btns">
+      <button data-days="1">1</button>
+      <button data-days="3">3</button>
+      <button data-days="7">7</button>
+      <button data-days="14">14</button>
+    </div>
+    <button class="mob-date-btn" id="mob-date-btn" aria-label="בחר תאריך"><span id="mob-date-label"></span></button>
+    <button class="mob-nav-btn" id="mob-btn-prev" title="תקופה הבאה" aria-label="תקופה הבאה"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg></button>
+  </div>
+</div>
+
+<script src="events.js"></script>
+<script>
+const DAY_NAMES = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const DAY_LETTERS = ['א','ב','ג','ד','ה','ו','ש'];
+const WAR_START = '2026-02-28';
+let IS_MOBILE = window.innerWidth < 600 || window.innerHeight < 500;
+let CELL_H = Math.max(Math.floor((window.innerHeight - 240) / 24), 24);
+
+let allData = {};
+let currentArea = '';
+let events = [];
+const MAX_DAYS = 30;
+let anchorDate = null; // YYYY-MM-DD
+let currentOffset = -7; // negative = before anchor, positive = after
+let customFrom = WAR_START;
+let customTo = null;
+const hiddenKinds = new Set(); // 'rocket', 'warning', 'drone'
+
+function fmtDur(min) { if(min<60) return min+' דק׳'; const h=Math.floor(min/60),m=min%60; return m>0?`${h} שע׳ ${m} דק׳`:`${h} שע׳`; }
+function fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function isToday(d) { const t=new Date(); return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate(); }
+function parseDate(s) { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+
+function calcRange(anchor, offset) {
+  const a = parseDate(anchor);
+  let from, to;
+  if (offset === 0) {
+    from = new Date(a); to = new Date(a);
+  } else if (offset < 0) {
+    to = new Date(a);
+    from = new Date(a); from.setDate(a.getDate() + offset + 1);
+  } else {
+    from = new Date(a);
+    to = new Date(a); to.setDate(a.getDate() + offset - 1);
+  }
+  return { from: fmtDate(from), to: fmtDate(to) };
+}
+
+function applyCurrentRange() {
+  const r = calcRange(anchorDate, currentOffset);
+  customFrom = r.from; customTo = r.to;
+}
+
+function getDates() {
+  const from = parseDate(customFrom);
+  const to = parseDate(customTo);
+  const dates = [];
+  const d = new Date(from);
+  while (d <= to && dates.length <= MAX_DAYS) {
+    dates.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
+function isOffsetValid(anchor, offset) {
+  const todayStr = fmtDate(new Date());
+  const r = calcRange(anchor, offset);
+  // Check if at least 1 date in range (excluding anchor) is valid
+  const from = parseDate(r.from), to = parseDate(r.to);
+  const warStart = parseDate(WAR_START);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const a = parseDate(anchor);
+  const d = new Date(from);
+  while (d <= to) {
+    if (d.getTime() !== a.getTime() && d >= warStart && d <= today) return true;
+    d.setDate(d.getDate() + 1);
+  }
+  return false;
+}
+
+function hasNewValidDates(anchor, days, prevDays, sign) {
+  // Check if offset=days reveals valid dates beyond offset=prevDays
+  const a = parseDate(anchor);
+  const warStart = parseDate(WAR_START);
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (sign < 0) {
+    // Extra dates: [anchor - days + 1, anchor - prevDays]
+    const from = new Date(a); from.setDate(a.getDate() - days + 1);
+    const to = new Date(a); to.setDate(a.getDate() - prevDays);
+    const d = new Date(from);
+    while (d <= to) {
+      if (d >= warStart && d <= today) return true;
+      d.setDate(d.getDate() + 1);
+    }
+  } else {
+    // Extra dates: [anchor + prevDays, anchor + days - 1]
+    const from = new Date(a); from.setDate(a.getDate() + prevDays);
+    const to = new Date(a); to.setDate(a.getDate() + days - 1);
+    const d = new Date(from);
+    while (d <= to) {
+      if (d >= warStart && d <= today) return true;
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  return false;
+}
+
+function updateOffsetButtons() {
+  const days = Math.abs(currentOffset);
+  // Day buttons: each enabled only if it reveals new valid dates beyond the previous smaller preset
+  const presets = [1, 3, 7, 14, 30];
+  document.querySelectorAll('#offset-btns button[data-days]').forEach(btn => {
+    const d = +btn.dataset.days;
+    const idx = presets.indexOf(d);
+    const prev = idx > 0 ? presets[idx - 1] : 0;
+    const enabled = hasNewValidDates(anchorDate, d, prev, -1);
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? '' : '.3';
+    btn.style.cursor = enabled ? '' : 'not-allowed';
+    btn.classList.toggle('active', days > 0 && d === days && enabled);
+  });
+  // Sync mobile bottom bar offset buttons
+  document.querySelectorAll('#mob-offset-btns button[data-days]').forEach(btn => {
+    const d = +btn.dataset.days;
+    btn.classList.toggle('active', days > 0 && d === days);
+  });
+}
+
+function updateNavButtons() {
+  const step = Math.abs(currentOffset) || 1;
+  // Page backward (→ right = past): move anchor back by step
+  const prevAnchor = parseDate(anchorDate); prevAnchor.setDate(prevAnchor.getDate() - step);
+  const prevR = calcRange(fmtDate(prevAnchor), currentOffset);
+  const prevValid = hasValidDate(prevR.from, prevR.to);
+  document.getElementById('btn-next').disabled = !prevValid;
+  // Page forward (← left = future): move anchor forward by step
+  const nextAnchor = parseDate(anchorDate); nextAnchor.setDate(nextAnchor.getDate() + step);
+  const nextR = calcRange(fmtDate(nextAnchor), currentOffset);
+  const nextValid = hasValidDate(nextR.from, nextR.to);
+  document.getElementById('btn-prev').disabled = !nextValid;
+  // Sync mobile nav buttons
+  const mobNext = document.getElementById('mob-btn-next');
+  const mobPrev = document.getElementById('mob-btn-prev');
+  if (mobNext) mobNext.disabled = !prevValid;
+  if (mobPrev) mobPrev.disabled = !nextValid;
+}
+
+function hasValidDate(fromStr, toStr) {
+  const from = parseDate(fromStr), to = parseDate(toStr);
+  const warStart = parseDate(WAR_START);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const validFrom = from < warStart ? warStart : from;
+  const validTo = to > today ? today : to;
+  return validFrom <= validTo;
+}
+
+function syncAnchorInput() {
+  if (typeof fpAnchor !== 'undefined') fpAnchor.setDate(parseDate(anchorDate), false);
+  const mobLabel = document.getElementById('mob-date-label');
+  if (mobLabel) {
+    const d = parseDate(anchorDate);
+    mobLabel.textContent = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  }
+}
+
+function applyOffset(offset) {
+  currentOffset = offset;
+  applyCurrentRange();
+  updateOffsetButtons();
+  syncAnchorInput();
+  render();
+}
+
+// --- #3 Default areas + #6 last updated ---
+const STORAGE_KEY = 'pikud-selected-areas';
+const DEFAULT_AREAS = ['tel-aviv-center','chyph-marb','jerusalem-west','beer-sheva-north'];
+
+function getSelectedAreas() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) { const p = JSON.parse(s).filter(k => allData[k]); if (p.length) return p; }
+  } catch(e) {}
+  return DEFAULT_AREAS.filter(k => allData[k]);
+}
+function saveSelectedAreas(keys) { localStorage.setItem(STORAGE_KEY, JSON.stringify(keys)); }
+
+function buildAreaToggle() {
+  const container = document.getElementById('area-toggle');
+  container.innerHTML = '';
+  const selected = getSelectedAreas();
+  if (!selected.length) { container.innerHTML = '<span style="color:var(--text-dim);padding:6px 14px;font-size:.82rem;">בחרו אזורים</span>'; return; }
+  selected.forEach((key, i) => {
+    const btn = document.createElement('button');
+    btn.dataset.area = key;
+    btn.textContent = allData[key].name;
+    if (i === 0) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      switchArea(key);
+      container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    container.appendChild(btn);
+  });
+  switchArea(selected[0]);
+}
+
+function switchArea(key) {
+  currentArea = key;
+  events = allData[key].events;
+  document.title = 'שאגת הארי - מעקב התראות – ' + allData[key].name;
+  gtag('event', 'select_area', { area_key: key, area_name: allData[key].name });
+  render();
+}
+
+// --- Dropdown ---
+function countEventsInView(areaEvents) {
+  const dates = getDates();
+  const dateStrs = new Set(dates.map(fmtDate));
+  return areaEvents.filter(ev => dateStrs.has(ev.d)).length;
+}
+
+function buildDropdownList() {
+  const list = document.getElementById('area-list');
+  list.innerHTML = '';
+  const selected = getSelectedAreas();
+  const catalog = (typeof AREA_CATALOG !== 'undefined') ? AREA_CATALOG : {};
+  // Compute dynamic counts based on current view range
+  const dynamicCounts = {};
+  Object.keys(catalog).forEach(key => {
+    dynamicCounts[key] = allData[key] ? countEventsInView(allData[key].events) : 0;
+  });
+  const keys = Object.keys(catalog).sort((a,b) => {
+    const asel = selected.includes(a) ? 1 : 0, bsel = selected.includes(b) ? 1 : 0;
+    if (asel !== bsel) return bsel - asel; // selected first
+    return (dynamicCounts[b]||0) - (dynamicCounts[a]||0);
+  });
+  keys.forEach(key => {
+    const item = document.createElement('label');
+    item.className = 'area-item';
+    item.dataset.name = catalog[key].name;
+    item.dataset.key = key;
+    item.dataset.eventCount = dynamicCounts[key] || 0;
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = key; cb.checked = selected.includes(key);
+    cb.addEventListener('change', enforceMaxAreas);
+    const name = document.createElement('span');
+    name.textContent = catalog[key].name;
+    const count = document.createElement('span');
+    count.className = 'count'; count.textContent = dynamicCounts[key] ? dynamicCounts[key] + ' אירועים' : '';
+    item.appendChild(cb); item.appendChild(name); item.appendChild(count);
+    list.appendChild(item);
+  });
+  enforceMaxAreas();
+}
+
+
+function tryCloseDropdown() {
+  const checked = document.querySelectorAll('#area-list input:checked').length;
+  const err = document.getElementById('area-error');
+  if (checked === 0) {
+    err.classList.add('visible');
+    setTimeout(() => err.classList.remove('visible'), 2000);
+    return false;
+  }
+  err.classList.remove('visible');
+  applySelection();
+  const dd = document.getElementById('area-dropdown');
+  dd.classList.remove('open');
+  document.getElementById('btn-areas').setAttribute('aria-expanded', 'false');
+  // Move dropdown back to its original parent on mobile
+  const areaSelector = document.querySelector('.area-selector');
+  if (dd.parentElement !== areaSelector) areaSelector.appendChild(dd);
+  return true;
+}
+
+document.getElementById('btn-areas').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const dd = document.getElementById('area-dropdown');
+  const isOpen = dd.classList.contains('open');
+  if (!isOpen) { buildDropdownList(); dd.classList.add('open'); document.getElementById('btn-areas').setAttribute('aria-expanded', 'true'); document.getElementById('area-search').value=''; if (!IS_MOBILE) document.getElementById('area-search').focus(); }
+  else { tryCloseDropdown(); }
+});
+
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('area-dropdown');
+  if (dd.classList.contains('open') && !dd.contains(e.target) && e.target.id !== 'btn-areas') {
+    tryCloseDropdown();
+  }
+});
+
+let searchTimer = null;
+document.getElementById('area-search').addEventListener('input', (e) => {
+  const q = e.target.value;
+  document.querySelectorAll('#area-list .area-item').forEach(item => {
+    item.style.display = item.dataset.name.includes(q) ? '' : 'none';
+  });
+  clearTimeout(searchTimer);
+  if (q.length >= 2) {
+    searchTimer = setTimeout(() => gtag('event', 'area_search', { query: q }), 1000);
+  }
+});
+
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+  const cbs = document.querySelectorAll('#area-list .area-item input');
+  cbs.forEach(cb => cb.checked = false);
+  enforceMaxAreas();
+});
+
+document.getElementById('btn-done-areas').addEventListener('click', (e) => {
+  e.stopPropagation();
+  tryCloseDropdown();
+});
+
+const MAX_AREAS = 10;
+function enforceMaxAreas() {
+  const checked = document.querySelectorAll('#area-list input:checked').length;
+  const unchecked = document.querySelectorAll('#area-list input:not(:checked)');
+  unchecked.forEach(cb => {
+    cb.disabled = checked >= MAX_AREAS;
+    cb.closest('.area-item').style.opacity = checked >= MAX_AREAS ? '.4' : '';
+  });
+}
+function applySelection() {
+  const previousAreas = getSelectedAreas();
+  const cbs = document.querySelectorAll('#area-list input:checked');
+  const selected = Array.from(cbs).map(cb => cb.value);
+  if (selected.length) {
+    saveSelectedAreas(selected);
+    gtag('event', 'apply_areas', { count: selected.length });
+    buildAreaToggle();
+    // Switch to first newly added area if any
+    const newlyAdded = selected.filter(k => !previousAreas.includes(k));
+    if (newlyAdded.length > 0) {
+      const firstNew = newlyAdded[0];
+      switchArea(firstNew);
+      const container = document.getElementById('area-toggle');
+      container.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.dataset.area === firstNew);
+      });
+    }
+  }
+}
+
+// --- Tooltip ---
+const tooltip = document.getElementById('tooltip');
+const KIND_LABELS = { rocket: 'ירי רקטות וטילים', warning: 'צפי להתרעות', drone: 'חדירת כלי טיס עוין' };
+function showTip(e) {
+  clearTimeout(hideTimer);
+  gtag('event', 'tooltip_hover', { kind: e.currentTarget.dataset.kind, date: e.currentTarget.dataset.date });
+  const dt = e.currentTarget.dataset;
+  const endH=Math.floor(+dt.endmin/60), endM=+dt.endmin%60;
+  const endStr=`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+  const timeColor = dt.kind==='rocket' ? 'var(--red)' : dt.kind==='drone' ? 'var(--purple)' : 'var(--orange)';
+  const label = KIND_LABELS[dt.kind] || dt.kind;
+  tooltip.querySelector('.tt-time').innerHTML = `<span style="color:${timeColor};direction:ltr;display:inline-block">${dt.start} - ${endStr}</span>`;
+  tooltip.querySelector('.tt-dur').textContent = fmtDur(+dt.duration);
+  tooltip.querySelector('.tt-type').textContent = label;
+
+  const startType = dt.si !== '' && typeof EVENT_TYPES !== 'undefined' ? EVENT_TYPES[+dt.si] : '';
+  let eventsHtml = `<span class="evt-label">אירוע התחלה:</span> ${dt.start}${startType ? ' - ' + startType : ''}`;
+  if (dt.endtime) {
+    const endType = dt.ei !== '' && typeof EVENT_TYPES !== 'undefined' ? EVENT_TYPES[+dt.ei] : '';
+    eventsHtml += `<br><span class="evt-label">אירוע סיום:</span> ${dt.endtime}${endType ? ' - ' + endType : ''}`;
+  } else {
+    eventsHtml += `<br><span class="evt-label">ללא אירוע סיום</span> - ברירת מחדל ${dt.duration} דק׳`;
+  }
+  tooltip.querySelector('.tt-events').innerHTML = eventsHtml;
+
+  tooltip.classList.add('visible');
+}
+let hideTimer = null;
+function hideTip() {
+  hideTimer = setTimeout(() => tooltip.classList.remove('visible'), 200);
+}
+function moveTip(e) {
+  const pad = 12;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const tw = tooltip.offsetWidth || 200, th = tooltip.offsetHeight || 80;
+  if (x + tw > window.innerWidth) x = e.clientX - tw - pad;
+  if (y + th > window.innerHeight) y = e.clientY - th - pad;
+  if (x < 0) x = pad;
+  if (y < 0) y = pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+// Keep tooltip alive when hovering over it
+tooltip.addEventListener('mouseenter', () => { clearTimeout(hideTimer); });
+tooltip.addEventListener('mouseleave', () => { tooltip.classList.remove('visible'); });
+// Dismiss tooltip on tap outside (mobile)
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.evt') && !e.target.closest('.tooltip')) {
+    tooltip.classList.remove('visible');
+  }
+});
+
+// --- Render ---
+function render() {
+  tooltip.classList.remove('visible');
+  clearTimeout(hideTimer);
+  const wrap = document.getElementById('cal-wrapper');
+  const dates = getDates();
+  if (!dates.length) return;
+  const dateStrs = dates.map(fmtDate);
+  const actualDays = dates.length;
+
+  updateNavButtons();
+  const periodEvents = events.filter(ev => dateStrs.includes(ev.d));
+  updateStats(periodEvents);
+  if (periodEvents.length === 0) {
+    wrap.innerHTML = '<div class="no-data">אין התרעות לאזור זה בטווח התאריכים הנבחר</div>';
+    return;
+  }
+
+  // Compute hourly counts (r=rockets, w=warnings, d=drones)
+  const hourCounts = Array.from({length:24}, () => ({r:0, w:0, d:0, total:0}));
+  periodEvents.forEach(ev => {
+    const h = Math.floor(ev.sm / 60);
+    if (h >= 0 && h < 24) {
+      if (ev.k === 'r') hourCounts[h].r++;
+      else if (ev.k === 'd') hourCounts[h].d++;
+      else hourCounts[h].w++;
+      hourCounts[h].total++;
+    }
+  });
+
+  // Day counts
+  const dayCounts = {};
+  dateStrs.forEach(ds => { dayCounts[ds] = { r:0, w:0, d:0, total:0 }; });
+  periodEvents.forEach(ev => {
+    if(dayCounts[ev.d]) {
+      if(ev.k==='r') dayCounts[ev.d].r++;
+      else if(ev.k==='d') dayCounts[ev.d].d++;
+      else dayCounts[ev.d].w++;
+      dayCounts[ev.d].total++;
+    }
+  });
+
+  // Find max/min with tie support + 20% rule
+  // excludeIdxs: indices to skip (e.g. today which is incomplete)
+  function findMaxMin(totals, excludeIdxs) {
+    const ex = new Set(excludeIdxs || []);
+    const filtered = totals.map((t, i) => ex.has(i) ? -1 : t);
+    const candidates = filtered.filter(t => t >= 0);
+    const count = candidates.length;
+    if (count === 0) return { maxIdxs: [], minIdxs: [] };
+    const maxVal = Math.max(...candidates);
+    const minVal = Math.min(...candidates);
+    const maxIdxs = maxVal > 0 ? filtered.map((t,i) => t === maxVal ? i : -1).filter(i => i >= 0) : [];
+    const minIdxs = (minVal >= 0 && minVal !== maxVal) ? filtered.map((t,i) => t === minVal ? i : -1).filter(i => i >= 0) : [];
+    return {
+      maxIdxs: maxIdxs.length > count * 0.2 ? [] : maxIdxs,
+      minIdxs: minIdxs.length > count * 0.2 ? [] : minIdxs
+    };
+  }
+
+  // Coverage range: WAR_START to last update date
+  const coverageStart = parseDate(WAR_START);
+  const coverageEndFull = typeof DATA_UPDATED !== 'undefined' ? new Date(DATA_UPDATED) : new Date();
+  const coverageEndDate = new Date(coverageEndFull); coverageEndDate.setHours(0,0,0,0);
+  const coverageEndHour = coverageEndFull.getHours();
+
+  // Incomplete days: today, coverage end date, out-of-range
+  const incompleteDays = [];
+  const outOfRangeDays = [];
+  dates.forEach((d, i) => {
+    if (d < coverageStart || d > coverageEndDate) outOfRangeDays.push(i);
+    else if (isToday(d) || d.getTime() === coverageEndDate.getTime()) incompleteDays.push(i);
+  });
+  const allExcluded = [...incompleteDays, ...outOfRangeDays];
+  const hourTotals = hourCounts.map(c => c.total);
+  const hourMM = findMaxMin(hourTotals);
+  const dayTotals = dateStrs.map(ds => dayCounts[ds].total);
+  // Two separate calls: incomplete days CAN win max (their count is already real)
+  // but are excluded from min (they might get more events before day ends).
+  // Out-of-range days are excluded from both.
+  const dayMax = findMaxMin(dayTotals, outOfRangeDays);
+  const dayMin = findMaxMin(dayTotals, allExcluded);
+  const dayMM = { maxIdxs: dayMax.maxIdxs, minIdxs: dayMin.minIdxs };
+
+  const timeColW = IS_MOBILE ? 46 : 50;
+  const wrapPad = IS_MOBILE ? 0 : 34; // .calendar-wrapper horizontal padding (16+16) + grid border (2)
+  const colWidth = actualDays <= 7 ? '1fr' : Math.max(Math.floor((window.innerWidth - timeColW - wrapPad) / actualDays), IS_MOBILE ? 28 : 32) + 'px';
+  const minW = actualDays <= 7 ? (timeColW + actualDays * (IS_MOBILE ? 48 : 90)) : (timeColW + actualDays * (IS_MOBILE ? 28 : 32));
+
+  let html = `<div class="time-grid" style="grid-template-columns:${timeColW}px repeat(${actualDays}, ${colWidth}); min-width:${minW}px;">`;
+
+  // Header row
+  html += `<div class="tg-header tg-corner">שעה</div>`;
+  dates.forEach((d, idx) => {
+    const ds = fmtDate(d), c = dayCounts[ds];
+    const noCov = d < coverageStart || d > coverageEndDate ? ' no-coverage' : '';
+    let mark = '', tip = '';
+    if (dayMM.maxIdxs.includes(idx)) { mark = ' day-max'; tip = ' title="הכי הרבה אירועים"'; }
+    else if (dayMM.minIdxs.includes(idx)) { mark = ' day-min'; tip = ' title="הכי מעט אירועים"'; }
+    const parts = [];
+    if (c.r) parts.push(`<span class="ds-r">${c.r}</span>`);
+    if (c.w) parts.push(`<span class="ds-w">${c.w}</span>`);
+    if (c.d) parts.push(`<span class="ds-d">${c.d}</span>`);
+    const dayName = (IS_MOBILE || actualDays >= 14) ? DAY_LETTERS[d.getDay()] : DAY_NAMES[d.getDay()];
+    const dateStr = IS_MOBILE ? String(d.getDate()) : `${d.getDate()}/${d.getMonth()+1}`;
+    const dayStatsHtml = parts.length ? `<div class="day-stats">${parts.join('')}</div>` : '';
+    html += `<div class="tg-header${mark}${noCov}"${tip}><span class="dn">${dayName}</span><span class="dd">${dateStr}</span>${dayStatsHtml}</div>`;
+  });
+
+  // Grid rows
+  for (let h=0; h<24; h++) {
+    const night = (h < 8) ? ' night' : '';
+    let hourMark = '', hourTip = '';
+    const hc = hourCounts[h];
+    if (hourMM.maxIdxs.includes(h)) { hourMark = ' hour-max'; hourTip = ' title="השעה עם הכי הרבה אירועים"'; }
+    else if (hourMM.minIdxs.includes(h)) { hourMark = ' hour-min'; hourTip = ' title="השעה עם הכי מעט אירועים"'; }
+    const hParts = [];
+    if (hc.r) hParts.push(`<span class="ds-r">${hc.r}</span>`);
+    if (hc.w) hParts.push(`<span class="ds-w">${hc.w}</span>`);
+    if (hc.d) hParts.push(`<span class="ds-d">${hc.d}</span>`);
+    const hourLabel = `${String(h).padStart(2,'0')}:00`;
+    const hourStatHtml = hParts.length ? `<div class="hour-stats">${hParts.join(' ')}</div>` : '';
+    html += `<div class="tg-time${night}${hourMark}" style="height:${CELL_H}px"${hourTip}>${hourLabel}${hourStatHtml}</div>`;
+    dates.forEach(d => {
+      const pastCov = d < coverageStart;
+      const futureCov = d > coverageEndDate || (d.getTime() === coverageEndDate.getTime() && h >= coverageEndHour);
+      const noCov = pastCov || futureCov ? ' no-coverage' : '';
+      html += `<div class="tg-cell${night}${noCov}" data-date="${fmtDate(d)}" data-hour="${h}" style="height:${CELL_H}px"></div>`;
+    });
+  }
+
+  html += '</div>';
+  wrap.innerHTML = `<div class="calendar-inner" id="cal-inner">${html}</div>`;
+
+  // Render events — split across hour cells for clean overflow
+  const KIND_MAP = { r: 'rocket', w: 'warning', d: 'drone' };
+  const visibleEvents = periodEvents.filter(ev => !hiddenKinds.has(KIND_MAP[ev.k] || 'warning'));
+  visibleEvents.forEach(ev => {
+    const startHour = Math.floor(ev.sm / 60);
+    const startMinInHour = ev.sm % 60;
+    const endMin = Math.min(ev.sm + ev.du, 24 * 60);
+    const endHour = Math.min(Math.ceil(endMin / 60) - 1, 23);
+    const kind = KIND_MAP[ev.k] || 'warning';
+
+    for (let h = startHour; h <= endHour; h++) {
+      const cell = wrap.querySelector(`.tg-cell[data-date="${ev.d}"][data-hour="${h}"]`);
+      if (!cell) continue;
+
+      const block = document.createElement('div');
+      block.className = `evt ${kind}`;
+
+      if (h === startHour) {
+        const topPx = (startMinInHour / 60) * CELL_H;
+        block.style.top = topPx + 'px';
+        block.style.height = Math.max(Math.min((ev.du / 60) * CELL_H, CELL_H - topPx), 4) + 'px';
+      } else if (h === endHour) {
+        const endMinInHour = endMin - h * 60;
+        block.style.top = '0';
+        block.style.height = Math.max((endMinInHour / 60) * CELL_H, 4) + 'px';
+      } else {
+        block.style.top = '0';
+        block.style.height = CELL_H + 'px';
+      }
+
+      block.dataset.start = ev.s;
+      block.dataset.endmin = ev.em;
+      block.dataset.duration = ev.du;
+      block.dataset.kind = kind;
+      block.dataset.endtime = ev.et || '';
+      block.dataset.date = ev.d;
+      block.dataset.si = ev.si >= 0 ? ev.si : '';
+      block.dataset.ei = ev.ei >= 0 ? ev.ei : '';
+
+      block.addEventListener('mouseenter', showTip);
+      block.addEventListener('mouseleave', hideTip);
+      block.addEventListener('mousemove', moveTip);
+      block.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showTip(e);
+        const pad = 12;
+        let x = e.clientX + pad, y = e.clientY + pad;
+        const tw = tooltip.offsetWidth || 200, th = tooltip.offsetHeight || 80;
+        if (x + tw > window.innerWidth) x = e.clientX - tw - pad;
+        if (y + th > window.innerHeight) y = e.clientY - th - pad;
+        if (x < 0) x = pad; if (y < 0) y = pad;
+        tooltip.style.left = x + 'px'; tooltip.style.top = y + 'px';
+      });
+      cell.appendChild(block);
+    }
+  });
+}
+
+function updateStats(periodEvents) {
+  const rockets = periodEvents.filter(e=>e.k==='r');
+  const warnings = periodEvents.filter(e=>e.k==='w');
+  const drones = periodEvents.filter(e=>e.k==='d');
+  document.getElementById('stat-rockets').textContent = rockets.length;
+  document.getElementById('stat-rockets').parentElement.style.display = rockets.length ? '' : 'none';
+  document.getElementById('stat-warnings').textContent = warnings.length;
+  document.getElementById('stat-warnings').parentElement.style.display = warnings.length ? '' : 'none';
+  document.getElementById('stat-drones').textContent = drones.length;
+  document.getElementById('stat-drones').parentElement.style.display = drones.length ? '' : 'none';
+}
+
+// --- Time range controls ---
+
+// Offset day buttons
+document.querySelectorAll('#offset-btns button[data-days]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const days = +btn.dataset.days;
+    const off = -days;
+    // Toggle off if clicking the already-active offset
+    if (off === currentOffset) {
+      gtag('event', 'select_preset', { offset: 0 });
+      applyOffset(0);
+    } else {
+      gtag('event', 'select_preset', { offset: off });
+      applyOffset(off);
+    }
+  });
+});
+
+// Flatpickr anchor date picker
+const dataStart = parseDate(WAR_START);
+const dataEnd = typeof DATA_UPDATED !== 'undefined' ? new Date(DATA_UPDATED) : new Date();
+dataEnd.setHours(0,0,0,0);
+const fpAnchor = flatpickr('#anchor-date', {
+  dateFormat: 'd/m/Y',
+  locale: typeof flatpickr !== 'undefined' && flatpickr.l10ns.he ? 'he' : 'default',
+  maxDate: 'today',
+  disableMobile: true,
+  onDayCreate: function(dObj, dStr, fp, dayElem) {
+    const d = dayElem.dateObj;
+    if (d < dataStart || d > dataEnd) dayElem.classList.add('no-data');
+  },
+  onChange: function(dates) {
+    if (!dates.length) return;
+    anchorDate = fmtDate(dates[0]);
+    // Keep current offset if valid, otherwise find closest valid one
+    if (!isOffsetValid(anchorDate, currentOffset)) {
+      // Find closest valid negative offset
+      for (const off of [-1,-3,-7,-14,-30]) {
+        if (isOffsetValid(anchorDate, off)) { currentOffset = off; break; }
+      }
+    }
+    applyCurrentRange();
+    updateOffsetButtons();
+    gtag('event', 'anchor_change', { anchor: anchorDate, offset: currentOffset });
+    render();
+  }
+});
+
+// Calendar icon opens flatpickr
+document.getElementById('cal-icon').addEventListener('click', () => fpAnchor.open());
+document.getElementById('cal-icon').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fpAnchor.open(); }
+});
+
+// Paging — moves anchor by offset step
+// → (right) = past, ← (left) = future (RTL)
+document.getElementById('btn-next').addEventListener('click', () => {
+  const step = Math.abs(currentOffset) || 1;
+  const a = parseDate(anchorDate); a.setDate(a.getDate() - step);
+  anchorDate = fmtDate(a);
+  applyCurrentRange();
+  updateOffsetButtons();
+  syncAnchorInput();
+  gtag('event', 'page_navigate', { direction: 'past' });
+  render();
+});
+document.getElementById('btn-prev').addEventListener('click', () => {
+  const step = Math.abs(currentOffset) || 1;
+  const a = parseDate(anchorDate); a.setDate(a.getDate() + step);
+  anchorDate = fmtDate(a);
+  applyCurrentRange();
+  updateOffsetButtons();
+  syncAnchorInput();
+  gtag('event', 'page_navigate', { direction: 'future' });
+  render();
+});
+
+// --- Event kind toggles ---
+document.querySelectorAll('.stat.toggleable').forEach(el => {
+  el.addEventListener('click', () => {
+    const kind = el.dataset.kind;
+    if (hiddenKinds.has(kind)) hiddenKinds.delete(kind);
+    else hiddenKinds.add(kind);
+    el.classList.toggle('off', hiddenKinds.has(kind));
+    gtag('event', 'toggle_stat', { kind: kind, visible: !hiddenKinds.has(kind) });
+    render();
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+  });
+});
+
+// --- Mobile area selector ---
+function openAreaSelector(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('area-dropdown');
+  if (!dd.classList.contains('open')) {
+    if (IS_MOBILE) document.body.appendChild(dd);
+    buildDropdownList();
+    dd.classList.add('open');
+    document.getElementById('btn-areas').setAttribute('aria-expanded', 'true');
+    document.getElementById('area-search').value = '';
+    if (!IS_MOBILE) setTimeout(() => document.getElementById('area-search').focus(), 100);
+  } else {
+    tryCloseDropdown();
+  }
+}
+document.getElementById('mob-areas-btn').addEventListener('click', openAreaSelector);
+
+// --- Mobile bottom bar controls ---
+document.getElementById('mob-btn-next').addEventListener('click', () => {
+  document.getElementById('btn-next').click();
+});
+document.getElementById('mob-btn-prev').addEventListener('click', () => {
+  document.getElementById('btn-prev').click();
+});
+document.querySelectorAll('#mob-offset-btns button[data-days]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const days = +btn.dataset.days;
+    const off = -days;
+    if (off === currentOffset) {
+      applyOffset(0);
+    } else {
+      gtag('event', 'select_preset', { offset: off });
+      applyOffset(off);
+    }
+  });
+});
+document.getElementById('mob-date-btn').addEventListener('click', () => {
+  fpAnchor.open();
+});
+
+// --- #6 Last updated ---
+function showLastUpdated() {
+  if (typeof DATA_UPDATED !== 'undefined') {
+    const d = new Date(DATA_UPDATED);
+    const pad = n => String(n).padStart(2, '0');
+    const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+    document.getElementById('last-updated').innerHTML = `עודכן לאחרונה: <b style="font-size:.9rem">${timeStr}</b> ${dateStr} (מתעדכן כל שעה)`;
+    const mobUp = document.getElementById('mob-updated');
+    if (mobUp) mobUp.textContent = `עודכן ${timeStr} ${dateStr}`;
+  }
+}
+
+// --- Theme ---
+function applyTheme(light) {
+  document.documentElement.classList.toggle('light', light);
+  document.querySelector('.icon-dark').style.display = light ? 'none' : '';
+  document.querySelector('.icon-light').style.display = light ? '' : 'none';
+  localStorage.setItem('pikud-theme', light ? 'light' : 'dark');
+  // Update flatpickr theme
+  document.querySelectorAll('.flatpickr-calendar').forEach(el => {
+    el.classList.toggle('dark', !light);
+  });
+}
+const savedTheme = localStorage.getItem('pikud-theme');
+const systemLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+applyTheme(savedTheme ? savedTheme === 'light' : systemLight);
+document.getElementById('btn-theme').addEventListener('click', () => {
+  const isLight = !document.documentElement.classList.contains('light');
+  applyTheme(isLight);
+  gtag('event', 'toggle_theme', { theme: isLight ? 'light' : 'dark' });
+});
+
+
+// --- Handle orientation/resize changes ---
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const wasMobile = IS_MOBILE;
+    IS_MOBILE = window.innerWidth < 600 || window.innerHeight < 500;
+    CELL_H = Math.max(Math.floor((window.innerHeight - 240) / 24), 24);
+    if (currentArea) render();
+  }, 150);
+});
+
+// --- Init ---
+if (typeof EVENTS_BY_AREA !== 'undefined') {
+  allData = EVENTS_BY_AREA;
+  anchorDate = fmtDate(new Date());
+  currentOffset = IS_MOBILE ? -7 : -14;
+  applyCurrentRange();
+  updateOffsetButtons();
+  syncAnchorInput();
+  buildAreaToggle();
+  showLastUpdated();
+  document.getElementById('loading-screen').classList.add('hidden');
+} else {
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('cal-wrapper').innerHTML = '<div class="no-data">שגיאה בטעינת הנתונים. ודאו שקובץ events.js קיים.</div>';
+}
+</script>
+</body>
+</html>
